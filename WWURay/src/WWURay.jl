@@ -208,8 +208,9 @@ end
 
 # Main loop:
 function main(scene, camera, height, width, outfile)
-    
+
     # get the requested scene and camera
+    @time begin
     scene = TestScenes.get_scene(scene)
     camera = TestScenes.get_camera(camera, height, width)
 
@@ -241,8 +242,8 @@ function main(scene, camera, height, width, outfile)
     # clamp canvas to valid range:
     clamp01!(canvas)
     save(File(format"PNG", outfile), colorview(RGB, canvas))
+    end
 
 end
 
 end # module WWURay
-
