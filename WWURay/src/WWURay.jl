@@ -21,10 +21,12 @@ include("WWUMeshes.jl")
 include("Scenes.jl")
 include("Cameras.jl")
 include("TestScenes.jl")
+include("Bound.jl")
 
 using .GfxBase
 using .Lights
 using .Materials
+using .Bound
 
 import .Scenes
 import .Scenes.Scene
@@ -60,7 +62,33 @@ function closest_intersect(objects::Array{Any, 1}, ray::Ray, tmin, tmax)
     #############
 end
 
-""" Trace a ray from orig along ray through scene, using Whitted recursive raytracing 
+function closest_intersect(objects::BoundVol, ray::Ray, tmin, tmax)
+    ##########
+    # TODO 2 #
+    ##########
+    # Your implementation:
+
+    hit_rec = nothing
+    mint = Inf
+
+    if Scenes.ray_intersect(ray, BoundVol.sphere)
+        for obj in BoundVol.objects
+            res = Scenes.ray_intersect(ray, obj)
+            if (res != nothing && res.t >= tmin && res.t <= tmax && res.t < mint)
+                hit_rec = res
+                mint = res.t
+            end
+        end
+    end
+
+    return hit_rec
+    #
+    #############
+    # END TODO 2
+    #############
+end
+
+""" Trace a ray from orig along ray through scene, using Whitted recursive raytracing
 limited to rec_depth recursive calls. """
 function traceray(scene::Scene, ray::Ray, tmin, tmax, rec_depth=1)
 
@@ -229,10 +257,15 @@ function main(scene, camera, height, width, outfile)
     #   then call traceray to determine its color
     #
     #print("y u no revise?")
-    for i in 1:height
+
+    # for obj in scene.obj
+    #     # build AABB
+    # end
+
+    Threads.@threads for i in 1:height
         for j in 1:width
             viewing_ray = Cameras.pixel_to_ray(camera, i, j)
-            canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, 1)
+            canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, 7)
         end
     end
     ##############
