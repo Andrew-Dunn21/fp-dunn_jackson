@@ -1,11 +1,12 @@
 module  Bound
 
-export BoundVol
+export BoundVol, vec3_mag
 
 using LinearAlgebra
 using ..GfxBase
 using ..Scenes
 using ..Materials
+using ..WWUMeshes
 #Add more modules as they become necessary
 
 #############################################
@@ -28,8 +29,6 @@ end
 ##Sphere, Triangle, BoundVol
 """ Put the objects in a BoundVol, abstract mode """
 function bound_object(object) end
-
-
 
 #BoundVol first since it's simplest
 """ Bounds an array of BoundVols with another BoundVol"""
@@ -73,5 +72,71 @@ function bound_object(objects::Array{BoundVol,1})
     return BoundVol(objects, Sphere(center, radius, mat))
 end
 
+#Next we do the sphere
+""" Bounds a sphere with a BoundVol"""
+function bound_object(object::Sphere)
+    mat = Material(Lambertian(), 0.0, nothing, nothing)
+    return BoundVol(object, Sphere(object.center, object.radius+0.1, mat))
+end
+
+#Now we try to bound an OBJMesh
+""" Bounds an OBJMesh with a sphere
+    with a BoundVol """
+function bound_object(object::OBJMesh)
+    verts = object.mesh.positions
+    minV, maxV = max_bounds(verts)
+    center = maxV-minV
+    radius = vec3_mag(maxV, center)
+    mat = Material(Lambertian(), 0.0, nothing, nothing)#We don't want to see BVs
+    return BoundVol(object, Sphere(center, radius, mat))
+end
+
+#Construct a BVH from a Scene object
+""" Takes a Scene object as input and returns a BoundVol
+    containing all of the objects in the scene (also bounds 
+    the objects in their own BoundVols,too)."""
+function build_hierarchy(scene::Scene)
+    objs = scene.objects
+    holder = []
+    for i in objs
+        push!(holder, BoundVol(i))
+    end
+    return BoundVol(holder)
+end
+
+#Helper methods
+""" Takes an array of Vec3s and gives you back
+    two Vec3s: one comrised of the smallest (x,y,z) values
+    and the other of the largest (x,y,z) values.
+    Handy for bounding boxes (or spheres)."""
+function max_bounds(verts::Array{Vec3,1})
+    minV = Vec3(0.0,0.0,0.0)
+    maxV = Vec3(0.0,0.0,0.0)
+    for v in verts
+        if v[1] < minV[1] #Once for x's
+            minV[1] = v[1]
+        elseif v[1] > maxV[1]
+            maxV[1] = v[1]
+        end
+        if v[2] < minV[2] #Twice for y's
+            minV[2] = v[2]
+        elseif v[2] > maxV[2]
+            maxV[2] = v[2]
+        end
+        if v[3] < minV[3] #Thrice for z's
+            minV[3] = v[3]
+        elseif v[3] > maxV[3]
+            maxV[3] = v[3]
+        end
+    end
+
+    return minV, maxV
+end
+
+""" Takes a pair of Vec3's and gives you the magnitude
+    of the vector between the two points."""
+function vec3_mag(vec1::Vec3, vec2::Vec3)
+    return (dot(vec2-vec1,vec2-vec1))^0.5
+end
 
 end # module Bound
