@@ -1,12 +1,13 @@
 module  Bound
 
-export BoundVol, vec3_mag
+export BoundVol, vec3_mag, build_hierarchy, bound_object
 
 using LinearAlgebra
 using ..GfxBase
 using ..Scenes
 using ..Materials
 using ..WWUMeshes
+using ..WWURay
 #Add more modules as they become necessary
 
 #############################################
@@ -76,7 +77,7 @@ end
 """ Bounds a sphere with a BoundVol"""
 function bound_object(object::Sphere)
     mat = Material(Lambertian(), 0.0, nothing, nothing)
-    return BoundVol(object, Sphere(object.center, object.radius+0.1, mat))
+    return BoundVol([object], Sphere(object.center, object.radius+0.1, mat))
 end
 
 #Now we try to bound an OBJMesh
@@ -88,7 +89,7 @@ function bound_object(object::OBJMesh)
     center = maxV-minV
     radius = vec3_mag(maxV, center)
     mat = Material(Lambertian(), 0.0, nothing, nothing)#We don't want to see BVs
-    return BoundVol(object, Sphere(center, radius, mat))
+    return BoundVol([object], Sphere(center, radius, mat))
 end
 
 #Construct a BVH from a Scene object
@@ -99,7 +100,7 @@ function build_hierarchy(scene::Scene)
     objs = scene.objects
     holder = []
     for i in objs
-        push!(holder, BoundVol(i))
+        push!(holder, [ound_object(i)])
     end
     return BoundVol(holder)
 end
