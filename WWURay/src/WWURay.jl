@@ -62,11 +62,8 @@ function closest_intersect(objects::Array{Any, 1}, ray::Ray, tmin, tmax)
     #############
 end
 
-function closest_intersect(objects::BoundVol, ray::Ray, tmin, tmax)
-    ##########
-    # TODO 2 #
-    ##########
-    # Your implementation:
+function closest_intersect(objects::Union{Array{BoundVol,1},BoundVol}, ray::Ray, tmin, tmax)
+    ##Implementation to allow for BoundVol objects
 
     hit_rec = nothing
     mint = Inf
@@ -82,10 +79,7 @@ function closest_intersect(objects::BoundVol, ray::Ray, tmin, tmax)
     end
 
     return hit_rec
-    #
-    #############
-    # END TODO 2
-    #############
+
 end
 
 """ Trace a ray from orig along ray through scene, using Whitted recursive raytracing
@@ -235,7 +229,7 @@ end
 ##############
 
 # Main loop:
-function main(scene, camera, height, width, outfile)
+function main(scene, camera, height, width, outfile, bound::Bool)
 
     # get the requested scene and camera
     @time begin
@@ -256,11 +250,14 @@ function main(scene, camera, height, width, outfile)
     #   for each pixel, get a viewing ray from the camera
     #   then call traceray to determine its color
     #
-    #print("y u no revise?")
 
     # for obj in scene.obj
     #     # build AABB
     # end
+    if bound
+        hier = build_hierarchy(scene)
+        scene.objects = hier
+    end
 
     Threads.@threads for i in 1:height
         for j in 1:width
