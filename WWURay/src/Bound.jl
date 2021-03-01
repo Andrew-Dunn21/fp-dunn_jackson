@@ -94,13 +94,13 @@ end
 
 #Construct a BVH from a Scene object
 """ Takes a Scene object as input and returns a BoundVol
-    containing all of the objects in the scene (also bounds 
+    containing all of the objects in the scene (also bounds
     the objects in their own BoundVols,too)."""
 function build_hierarchy(scene::Scene)
     objs = scene.objects
     holder = []
     for i in objs
-        push!(holder, [ound_object(i)])
+        push!(holder, [bound_object(i)])
     end
     return BoundVol(holder)
 end

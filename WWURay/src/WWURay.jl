@@ -1,4 +1,4 @@
-""" 
+"""
 Main module for CS480/580 A2 raytracer. Contains core raytracing algrithm,
 while referencing several other modules that encapsulate supporting
 functionality.
@@ -45,9 +45,9 @@ function closest_intersect(objects::Array{Any, 1}, ray::Ray, tmin, tmax)
 
     hit_rec = nothing
     mint = Inf
-    
+
     for obj in objects
-        
+
         res = Scenes.ray_intersect(ray, obj)
         if (res != nothing && res.t >= tmin && res.t <= tmax && res.t < mint)
             hit_rec = res
@@ -119,7 +119,44 @@ function traceray(scene::Scene, ray::Ray, tmin, tmax, rec_depth=1)
     ############
 end
 
-""" Determine the color of interesction point described by hitrec 
+
+"""Bounded traceray"""
+function traceray(scene::Scene, ray::Ray, tmin, tmax, bound::Bool, rec_depth=1)
+
+    closest_hitrec = closest_intersect(scene.objects, ray, tmin, tmax)
+
+    if closest_hitrec == nothing
+        return scene.background
+    end
+
+    object = closest_hitrec.object
+    point = closest_hitrec.intersection
+    normal = closest_hitrec.normal
+    material = object.material
+    shader = material.shading_model
+
+    local_color = determine_color(shader, object.material, ray, closest_hitrec, scene)
+
+    ##############################
+    # TODO 6 - mirror reflection #
+    ##############################
+    # Your implementation:
+    #
+    if material.mirror_coeff > 0 && rec_depth > 0
+        view_dir = -1 * ray.direction
+        reflected_dir = (-1 * view_dir) + (2 * dot(normal, view_dir) * normal) #-v + 2(n.v)v
+        reflected_ray = Ray(point, reflected_dir)
+        reflection = traceray(scene, reflected_ray, 0.000001, Inf, (rec_depth-1))
+        return (material.mirror_coeff * reflection) + ((1 - material.mirror_coeff) * local_color)
+    end
+
+    return local_color
+    ############
+    # END TODO 6
+    ############
+end
+
+""" Determine the color of interesction point described by hitrec
 Flat shading - just color the pixel the material's diffuse color """
 function determine_color(shader::Flat, material::Material, ray::Ray, hitrec::HitRecord, scene::Scene)
     get_diffuse(material, hitrec.uv)
@@ -164,7 +201,7 @@ end
 
 """ shade_light(shader, material, ray, hitrec, light, scene)
 Determine the color contribution of the given light along the given ray.
-Color depends on the material, the shading model (shader), properties of the intersection 
+Color depends on the material, the shading model (shader), properties of the intersection
 given in hitrec, """
 function shade_light(shader::Lambertian, material::Material, ray::Ray, hitrec, light, scene)
     ###########
@@ -229,7 +266,7 @@ end
 ##############
 
 # Main loop:
-function main(scene, camera, height, width, outfile, bound::Bool)
+function main(scene, camera, height, width, outfile, bound::Bool=false)
 
     # get the requested scene and camera
     @time begin
@@ -251,9 +288,6 @@ function main(scene, camera, height, width, outfile, bound::Bool)
     #   then call traceray to determine its color
     #
 
-    # for obj in scene.obj
-    #     # build AABB
-    # end
     if bound
         hier = build_hierarchy(scene)
         scene.objects = hier
@@ -262,7 +296,11 @@ function main(scene, camera, height, width, outfile, bound::Bool)
     Threads.@threads for i in 1:height
         for j in 1:width
             viewing_ray = Cameras.pixel_to_ray(camera, i, j)
-            canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, 7)
+            if bound # This runs enough time it might be better to pull this out of the loop
+                canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, bound, 7)
+            else
+                canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, 7)
+            end
         end
     end
     ##############
