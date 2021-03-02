@@ -6,7 +6,7 @@ functionality.
 
 module WWURay
 
-export main
+export main, closest_intersect
 
 using FileIO
 using Images
@@ -54,7 +54,10 @@ function closest_intersect(objects::Array{Any, 1}, ray::Ray, tmin, tmax)
             mint = res.t
         end
     end
-
+    if hit_rec != nothing && hit_rec.object.material == nothing
+        print("sus")
+        return nothing
+    end
     return hit_rec
     #
     #############
@@ -62,25 +65,25 @@ function closest_intersect(objects::Array{Any, 1}, ray::Ray, tmin, tmax)
     #############
 end
 
-function closest_intersect(objects::Union{Array{BoundVol,1},BoundVol}, ray::Ray, tmin, tmax)
-    ##Implementation to allow for BoundVol objects
+# function closest_intersect(objects::Union{Array{BoundVol,1},BoundVol}, ray::Ray, tmin, tmax)
+#     ##Implementation to allow for BoundVol objects
 
-    hit_rec = nothing
-    mint = Inf
+#     hit_rec = nothing
+#     mint = Inf
 
-    if Scenes.ray_intersect(ray, BoundVol.sphere)
-        for obj in BoundVol.objects
-            res = Scenes.ray_intersect(ray, obj)
-            if (res != nothing && res.t >= tmin && res.t <= tmax && res.t < mint)
-                hit_rec = res
-                mint = res.t
-            end
-        end
-    end
+#     if Scenes.ray_intersect(ray, BoundVol.sphere)
+#         for obj in BoundVol.objects
+#             res = Scenes.ray_intersect(ray, obj)
+#             if (res != nothing && res.t >= tmin && res.t <= tmax && res.t < mint)
+#                 hit_rec = res
+#                 mint = res.t
+#             end
+#         end
+#     end
 
-    return hit_rec
+#     return hit_rec
 
-end
+# end
 
 """ Trace a ray from orig along ray through scene, using Whitted recursive raytracing
 limited to rec_depth recursive calls. """
@@ -88,18 +91,26 @@ function traceray(scene::Scene, ray::Ray, tmin, tmax, rec_depth=1)
 
     closest_hitrec = closest_intersect(scene.objects, ray, tmin, tmax)
 
-    if closest_hitrec == nothing
-        return scene.background
+    if closest_hitrec == BoundVol
+        closest_hitrec = hit_rect(ray, closest_hitrec, tmin, tmax)
+        print('~')
     end
-
+    if closest_hitrec == nothing
+            return scene.background
+    end
+    
     object = closest_hitrec.object
     point = closest_hitrec.intersection
     normal = closest_hitrec.normal
     material = object.material
     shader = material.shading_model
-
+    
+    if shader == nothing || object.material==nothing||scene==nothing||closest_hitrec==nothing
+        throw(DivideError())
+    end
+    
     local_color = determine_color(shader, object.material, ray, closest_hitrec, scene)
-
+    
     ##############################
     # TODO 6 - mirror reflection #
     ##############################
@@ -119,42 +130,53 @@ function traceray(scene::Scene, ray::Ray, tmin, tmax, rec_depth=1)
     ############
 end
 
+""" Trying things to make traceray work with BVH"""
+function boundray(scene::Scene, ray::Ray, tmin, tmax, rec_depth=1)
+    #This keeps things working while debugging the
+    #broken bits
+    return scene.background #Comment out to try the method
 
-"""Bounded traceray"""
-function traceray(scene::Scene, ray::Ray, tmin, tmax, bound::Bool, rec_depth=1)
-
-    closest_hitrec = closest_intersect(scene.objects, ray, tmin, tmax)
-
-    if closest_hitrec == nothing
-        return scene.background
-    end
-
-    object = closest_hitrec.object
-    point = closest_hitrec.intersection
-    normal = closest_hitrec.normal
-    material = object.material
-    shader = material.shading_model
-
-    local_color = determine_color(shader, object.material, ray, closest_hitrec, scene)
-
-    ##############################
-    # TODO 6 - mirror reflection #
-    ##############################
-    # Your implementation:
-    #
-    if material.mirror_coeff > 0 && rec_depth > 0
-        view_dir = -1 * ray.direction
-        reflected_dir = (-1 * view_dir) + (2 * dot(normal, view_dir) * normal) #-v + 2(n.v)v
-        reflected_ray = Ray(point, reflected_dir)
-        reflection = traceray(scene, reflected_ray, 0.000001, Inf, (rec_depth-1))
-        return (material.mirror_coeff * reflection) + ((1 - material.mirror_coeff) * local_color)
-    end
-
-    return local_color
-    ############
-    # END TODO 6
-    ############
+    ##Actual code, which is currently broken
+    out = hit_rect(ray, scene.objects, tmin, tmax)#Lets maybe redo this one
 end
+
+""" """
+
+"""Bounded traceray""" #I'm taking this offline to handle BoundVols differently
+# function traceray(scene::Scene, ray::Ray, tmin, tmax, bound::Bool, rec_depth=1)
+
+#     closest_hitrec = closest_intersect(scene.objects, ray, tmin, tmax)
+
+#     if closest_hitrec == nothing
+#         return scene.background
+#     end
+
+#     object = closest_hitrec.object
+#     point = closest_hitrec.intersection
+#     normal = closest_hitrec.normal
+#     material = object.material
+#     shader = material.shading_model
+
+#     local_color = determine_color(shader, object.material, ray, closest_hitrec, scene)
+
+#     ##############################
+#     # TODO 6 - mirror reflection #
+#     ##############################
+#     # Your implementation:
+#     #
+#     if material.mirror_coeff > 0 && rec_depth > 0
+#         view_dir = -1 * ray.direction
+#         reflected_dir = (-1 * view_dir) + (2 * dot(normal, view_dir) * normal) #-v + 2(n.v)v
+#         reflected_ray = Ray(point, reflected_dir)
+#         reflection = traceray(scene, reflected_ray, 0.000001, Inf, (rec_depth-1))
+#         return (material.mirror_coeff * reflection) + ((1 - material.mirror_coeff) * local_color)
+#     end
+
+#     return local_color
+#     ############
+#     # END TODO 6
+#     ############
+# end
 
 """ Determine the color of interesction point described by hitrec
 Flat shading - just color the pixel the material's diffuse color """
@@ -209,6 +231,10 @@ function shade_light(shader::Lambertian, material::Material, ray::Ray, hitrec, l
     ###########
     # Your implementation:
     #
+    if Materials.get_diffuse(material, hitrec.uv) ==nothing
+        print(typeof(scene.objects[1]))
+        throw(DivideError())
+    end
     light_direction = Lights.light_direction(light, hitrec.intersection)
     dif_c = Materials.get_diffuse(material, hitrec.uv) * light.intensity * max(0, dot(hitrec.normal, light_direction))
 
@@ -291,18 +317,34 @@ function main(scene, camera, height, width, outfile, bound::Bool=false)
     if bound
         hier = build_hierarchy(scene)
         scene = Scene(scene.background, hier, scene.lights)
-    end
+        #Threads.@threads for i in 1:height
+        for i in 1:height
+            for j in 1:width
+                viewing_ray = Cameras.pixel_to_ray(camera, i, j)
+                canvas[i,j]  = boundray(scene, viewing_ray, 1, Inf, 7)
+            end
+        end
+    else
 
-    Threads.@threads for i in 1:height
-        for j in 1:width
-            viewing_ray = Cameras.pixel_to_ray(camera, i, j)
-            if bound # This runs enough time it might be better to pull this out of the loop
-                canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, bound, 7)
-            else
+        #Threads.@threads for i in 1:height
+        for i in 1:height
+            for j in 1:width
+                viewing_ray = Cameras.pixel_to_ray(camera, i, j)
                 canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, 7)
             end
         end
     end
+
+    # Threads.@threads for i in 1:height
+    #     for j in 1:width
+    #         viewing_ray = Cameras.pixel_to_ray(camera, i, j)
+    #         if bound # This runs enough time it might be better to pull this out of the loop
+    #             canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, bound, 7)
+    #         else
+    #             canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, 7)
+    #         end
+    #     end
+    # end
     ##############
     # END TODO 3 #
     ##############
