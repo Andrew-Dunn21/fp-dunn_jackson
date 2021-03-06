@@ -15,7 +15,7 @@ function decimate()#mesh::OBJMesh)
     mesh = read_obj("data/bunny.obj")
     println("Finding Edges")
     decimator = findEdges(mesh)
-    println(size(decimator.edges)[1], " Edges")
+    println(size(decimator.edges)[1], " Unique Edges")
     buildViable(mesh, decimator)
 
     return 1
@@ -31,6 +31,7 @@ function buildViable(mesh::OBJMesh, decimator::decimationInfo)
         i += 1
     end
     decimator.edgeDist = sort(decimator.edgeDist)
+    decimator.edgeDist = removeDups(mesh, decimator)
     #println(decimator.edgeDist)
     return decimator
 end
@@ -42,7 +43,27 @@ function calcDistance(point1::Vec3, point2::Vec3)
 end
 
 function removeDups(mesh::OBJMesh, decimator::decimationInfo)
-
+    i = []
+    j = 1
+    deleteat!(decimator.edgeDist, 1)
+    for edge in decimator.edgeDist
+        indexes = edge[2]
+        indexes = decimator.edges[Int(indexes)]
+        index1 = indexes[1]
+        index2 = indexes[2]
+        check1 = indexin(index1, i)
+        check2 = indexin(index2, i)
+        if check1[1] == nothing && check2[1] == nothing
+            push!(i, j)
+        end
+        j+=1
+    end
+    validRemovals = []
+    println(length(i), " Viable Edges Found")
+    for indexes in i
+        push!(validRemovals, decimator.edgeDist[indexes])
+    end
+    return validRemovals
 end
 
 function findEdges(mesh::OBJMesh)
