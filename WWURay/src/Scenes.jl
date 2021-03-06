@@ -2,6 +2,7 @@ module Scenes
 
 export HitRecord, Sphere, Scene, TriangleMesh, ray_intersect, create_triangles
 #export has_uvs, has_normals, get_vertex, get_uv, get_normal
+export Triangle
 
 using LinearAlgebra
 
@@ -9,7 +10,7 @@ using LinearAlgebra
 using ..GfxBase
 using ..WWUMeshes
 using ..Materials
-
+using ..Bound
 
 
 #####################################
@@ -38,6 +39,9 @@ Returns a HitRecord with info about the intersetion, or nothing if
 the ray doesn't intersect with the object. """
 function ray_intersect(ray::Ray, object) end
 
+function ray_intersect(ray::Ray, object::BoundVol)
+    return ray_intersect(ray, object.bound)
+end
 
 ##################
 ##### Sphere #####
