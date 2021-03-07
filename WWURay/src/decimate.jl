@@ -17,9 +17,50 @@ function decimate()#mesh::OBJMesh)
     decimator = findEdges(mesh)
     println(size(decimator.edges)[1], " Unique Edges")
     buildViable(mesh, decimator)
+    collapseMesh(mesh, decimator)
 
     return 1
     #return mesh
+end
+
+function collapseMesh(mesh::OBJMesh, decimator::decimationInfo)
+    println("Collapsing Mesh")
+    for edge in decimator.edgeDist
+        index1 = decimator.edges[Int(edge[2])][1]
+        index2 = decimator.edges[Int(edge[2])][2]
+        if index1 > decimator.edges[Int(edge[2])][2]
+            index1 = decimator.edges[Int(edge[2])][2]
+            index2 = decimator.edges[Int(edge[2])][1]
+        end
+        point1 = decimator.edges[Int(edge[2])][1]
+        point2 = decimator.edges[Int(edge[2])][2]
+        point = collapse(mesh.positions[point1], mesh.positions[point2])
+        mesh.positions[index1] = point
+        indexPos = 1
+        removeIndexes = []
+
+        for tri in mesh.triangles
+            index1Flag = false
+            index2Flag = false
+            for indexes in tri.positions
+                if indexes == index1
+                    index1Flag = true
+                elseif indexes == index2
+                    index2Flag = true
+                    indexes = index1
+                end
+                if index1Flag && index2Flag
+                    push!(removeIndexes, indexPos)
+                end
+            end
+            indexPos += 1
+        end
+    end
+end
+
+function collapse(point1::Vec3, point2::Vec3)
+    point = Vec3((point1[1] + point2[1]) / 2, (point1[2] + point2[2]) / 2, (point1[3] + point2[3]) / 2)
+    return point
 end
 
 function buildViable(mesh::OBJMesh, decimator::decimationInfo)
