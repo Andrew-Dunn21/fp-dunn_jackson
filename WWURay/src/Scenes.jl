@@ -40,8 +40,13 @@ the ray doesn't intersect with the object. """
 function ray_intersect(ray::Ray, object) end
 
 function ray_intersect(ray::Ray, object::BoundVol)
-    #This needs help
-    make_bound_mesh(object)
+    #This just reroutes to hit_box
+    res = hit_box(ray, object)
+    if res != nothing
+        print("~") #This should be happening
+        res = ray_intersect(ray, object.objects[1])#Only set up for 1 item boxes
+    end
+    return res
 end
 
 ##################
@@ -214,14 +219,23 @@ end
 ################################
 """ Basic version, just puts all objects into a box."""
 function build_hierarchy(scene::Scene)
-    bObjs = Array{BoundVol,1}
+    bObjs = []
+    verts = Array{Vec3}([])
     for obj in scene.objects
         #Bound each object
         push!(bObjs, bound_object(obj))
+        if obj == Sphere
+            push!(verts, obj.center+radius)
+            push!(verts, obj.center-radius)
+        elseif obj == Triangle
+            push!(verts, obj.mesh.positions)
+        end
     end
     #Later: Find the bounded objects that are closest together
     #and bound them, too
-    return BoundVol(bObjs, nothing, nothing)
+    mins, maxs = max_bounds(verts)
+    bound = bound_builder(mins, maxs)
+    return BoundVol(bObjs, bound, nothing, nothing)
 end
 
 """ Bound an object with a BoundVol."""
@@ -229,7 +243,7 @@ function bound_object(object, kids=nothing, parent=nothing) end
 
 function bound_object(object::Sphere, parent=nothing, kids=nothing)
     #Get the bounds
-    mins,maxs = max_bounds([obj.center-obj.radius, obj.center+obj.radius])
+    mins,maxs = max_bounds([object.center-object.radius, object.center+object.radius])
     bound = bound_builder(mins, maxs)
     return BoundVol([object], bound, kids, parent)
 end
@@ -240,7 +254,7 @@ function bound_object(object::Triangle, kids=nothing, parent=nothing)
     return BoundVol([object], bound, kids, parent)
 end
 
-function bound_object(object::Array{BoundVol,1}, kids=nothing, parent=nothing)
+function bound_object(object::Array{Any,1}, kids=nothing, parent=nothing)
     verts = Array{Vec3,1}
     for i in object
         for j in object.bound
@@ -253,10 +267,11 @@ function bound_object(object::Array{BoundVol,1}, kids=nothing, parent=nothing)
 end
 
 ##Helper functions
-""" Takes the output of Bound.max_bound and makes the points
-    for a BoundVol to hold"""
+# """ Takes the output of Bound.max_bound and makes the points
+#     for a BoundVol to hold"""
 function bound_builder(min::Vec3, max::Vec3)
-    bound = Array{Vec3, 1}(nothing, (1,8))
+    bound = [Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),
+                    Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0)]
     bound[1] = min                          #MinX, MinY, MinZ
     bound[2] = Vec3(min[1], min[2], max[3]) #MinX, MinY, MaxZ
     bound[3] = Vec3(max[1], min[2], min[3]) #MaxX, MinY, MinZ
@@ -268,8 +283,59 @@ function bound_builder(min::Vec3, max::Vec3)
     return bound
 end
 
-""" Compares a given Triangle's OBJMesh against known OBJMeshes
-    to see if the mesh has already been bounded. """
-#TBD
+# """ Takes a ray and a BoundVol object and pretends it has
+#     a physical structure to compute the triangle intersections
+#     of ray with the pretend triangles of the bounding box.
+#     """
+
+function hit_box(ray::Ray, bound::BoundVol)
+    #First we make the 12 triangles of goodness
+    #composed of Vec3 of point indices in bound.bound
+    t01 = Vec3(1,3,2)
+    t02 = Vec3(2,3,4)
+    t03 = Vec3(2,6,8)
+    t04 = Vec3(2,4,8)
+    t05 = Vec3(4,7,8)
+    t06 = Vec3(4,3,7)
+    t07 = Vec3(3,7,5)
+    t08 = Vec3(3,1,5)
+    t09 = Vec3(1,6,5)
+    t10 = Vec3(1,2,6)
+    t11 = Vec3(6,7,5)
+    t12 = Vec3(6,8,7)
+    tList = [t01, t02, t03, t04, t05, t06, t07, t08, t09, t10, t11, t12]
+    minT = Inf
+    intersect = nothing
+
+    #Loop the triangles and see if any are winners
+    for i in 1:12
+        tri = tList[i]
+        a = bound.bound[Int(tri[1])]
+        b = bound.bound[Int(tri[2])]
+        c = bound.bound[Int(tri[3])]
+        b2a = b - a
+        c2a = c - a
+        d = ray.direction
+        p2a = a - ray.origin
+        
+        A = hcat(b2a, c2a, d)
+        byt = A \ p2a
+        beta = byt[1]
+        gamma = byt[2]
+        alfa = 1 - beta - gamma
+        t = byt[3]
+    
+        if t < minT && alfa >= 0 && alfa <= 1 && beta >= 0 && beta <= 1 && gamma >= 0 && gamma <= 1 
+            minT = t
+            intersect = ray.origin + t*ray.direction
+        end
+    end
+
+    if intersect == nothing
+        return nothing
+    end
+
+    return HitRecord(minT, intersect, Vec3(0,0,0), nothing, bound)
+end #hit_box
 
 end # module Scenes

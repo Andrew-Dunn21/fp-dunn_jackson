@@ -317,8 +317,8 @@ function main(scene, camera, height, width, outfile, bound::Bool=false)
     #
 
     if bound
-        hier = build_hierarchy(scene)
-        scene = Scene(scene.background, hier, scene.lights)
+        hier = Scenes.build_hierarchy(scene)
+        scene = Scene(scene.background, [hier], scene.lights)
         #Threads.@threads for i in 1:height
         for i in 1:height
             for j in 1:width
