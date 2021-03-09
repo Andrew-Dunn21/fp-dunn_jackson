@@ -2,7 +2,7 @@ module Scenes
 
 export HitRecord, Sphere, Scene, TriangleMesh, ray_intersect, create_triangles
 #export has_uvs, has_normals, get_vertex, get_uv, get_normal
-export Triangle
+export build_hierarchy
 
 using LinearAlgebra
 
@@ -40,7 +40,8 @@ the ray doesn't intersect with the object. """
 function ray_intersect(ray::Ray, object) end
 
 function ray_intersect(ray::Ray, object::BoundVol)
-    return ray_intersect(ray, object.bound)
+    #This needs help
+    make_bound_mesh(object)
 end
 
 ##################
@@ -207,5 +208,68 @@ function ray_intersect(ray::Ray, object::Triangle)
     # TODO 9c - modify above to fill in Hitrec's texture coordinates
     ################################################################
 end
+
+################################
+###### BoundVol Build Kit ######
+################################
+""" Basic version, just puts all objects into a box."""
+function build_hierarchy(scene::Scene)
+    bObjs = Array{BoundVol,1}
+    for obj in scene.objects
+        #Bound each object
+        push!(bObjs, bound_object(obj))
+    end
+    #Later: Find the bounded objects that are closest together
+    #and bound them, too
+    return BoundVol(bObjs, nothing, nothing)
+end
+
+""" Bound an object with a BoundVol."""
+function bound_object(object, kids=nothing, parent=nothing) end
+
+function bound_object(object::Sphere, parent=nothing, kids=nothing)
+    #Get the bounds
+    mins,maxs = max_bounds([obj.center-obj.radius, obj.center+obj.radius])
+    bound = bound_builder(mins, maxs)
+    return BoundVol([object], bound, kids, parent)
+end
+
+function bound_object(object::Triangle, kids=nothing, parent=nothing)
+    mins, maxs = max_bounds(object.mesh.positions)
+    bound = bound_builder(mins, maxs)
+    return BoundVol([object], bound, kids, parent)
+end
+
+function bound_object(object::Array{BoundVol,1}, kids=nothing, parent=nothing)
+    verts = Array{Vec3,1}
+    for i in object
+        for j in object.bound
+            push!(verts, j)
+        end
+    end
+    mins, maxs = max_bounds(verts)
+    bound = bound_builder(mins, maxs)
+    return BoundVol(object, bound, kids, parent)
+end
+
+##Helper functions
+""" Takes the output of Bound.max_bound and makes the points
+    for a BoundVol to hold"""
+function bound_builder(min::Vec3, max::Vec3)
+    bound = Array{Vec3, 1}(nothing, (1,8))
+    bound[1] = min                          #MinX, MinY, MinZ
+    bound[2] = Vec3(min[1], min[2], max[3]) #MinX, MinY, MaxZ
+    bound[3] = Vec3(max[1], min[2], min[3]) #MaxX, MinY, MinZ
+    bound[4] = Vec3(max[1], min[2], max[3]) #MaxX, MinY, MaxZ
+    bound[5] = Vec3(min[1], max[2], min[3]) #MinX, MaxY, MinZ
+    bound[6] = Vec3(min[1], max[2], max[3]) #MinX, MaxY, MaxZ
+    bound[7] = Vec3(max[1], max[2], min[3]) #MaxX, MaxY, MinZ
+    bound[8] = max                          #MaxX, MaxY, MaxZ
+    return bound
+end
+
+""" Compares a given Triangle's OBJMesh against known OBJMeshes
+    to see if the mesh has already been bounded. """
+#TBD
 
 end # module Scenes

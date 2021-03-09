@@ -1,18 +1,17 @@
 module  Bound
 
-export BoundVol, vec3_mag, build_hierarchy, bound_object
-export hit_rect
+export BoundVol, vec3_mag, max_bounds
+# export hit_rect, build_hierarchy, bound_object
 
 using LinearAlgebra
 using ..GfxBase
-using ..Scenes
 using ..Materials
 using ..WWUMeshes
 using ..WWURay
 #Add more modules as they become necessary
 
 #############################################
-###### Bound Volume Data Type (Sphere) ######
+###### Bound Volume Data Type (AABB) ######
 #############################################
 """ This is the high-level data type that the
 BVH will utilize. It will be set so that if a ray
@@ -20,96 +19,101 @@ intersects a BoundVol, then we check the BoundVol's
 children to see if any of them are intersected and
 return the closest (if any are).
 
-We will first implement sphere-bounding.
-AABB to follow once spheres are stable."""
-struct BoundVol
-    objects::Union{Array{BoundVol,1},BoundVol,Sphere,Triangle} #Things that are bounded
-    bound::Sphere #Does the bounding
+AABB time is now"""
+#We need axis aligned bounding boxes before we can
+#add them to the BoundVol data type:
+mutable struct BoundVol
+    objects::Array{Any,1} #Things that are bounded, has to array
+    bound::Array{Vec3,1} #Points for bounding
+    kids::Union{Array{BoundVol,1}, Nothing}
+    parent::Union{BoundVol, Nothing}
 end
 
-##Abstract wrapper, need implementations for:
-##Sphere, Triangle, BoundVol
-""" Put the objects in a BoundVol, abstract mode """
-function bound_object(object) end
+purple = RGB{Float32}(1,0,1) #For debugging, make the bounds purple
 
-#BoundVol first since it's simplest
-""" Bounds an array of BoundVols with another BoundVol"""
-function bound_object(objects::Array{BoundVol,1})
-    # print("Apple jacks\n")
-    minX = 0.0
-    maxX = 0.0
-    minY = 0.0
-    maxY = 0.0
-    minZ = 0.0
-    maxZ = 0.0
-    #Find out how big of a BoundVol we need
-    for vol in objects
-        cen = vol.bound.center
-        rad = vol.bound.radius
-        if cen[1]+rad > maxX
-            maxX = cen[1]+rad
-        end
-        if cen[1]-rad < minX
-            minX = cen[1]-rad
-        end
-        if cen[2]+rad > maxY
-            maxY = cen[2]+rad
-        end
-        if cen[2]-rad < minY
-            minY = cen[2]-rad
-        end
-        if cen[3]+rad > maxZ
-            maxZ = cen[3]+rad
-        end
-        if cen[3]-rad < minZ
-            minZ = cen[3]-rad
-        end
-    end
-    #Use the data to make a new BoundVol
-    cX = (maxX - minX)/2 + minX
-    cY = (maxY - minY)/2 + minY
-    cZ = (maxZ - minZ)/2 + minZ
-    center = Vec3(cX,cY,cZ)
-    radius = max(maxX-cX, maxY-cY, maxZ-cZ)
-    mat = Material(Lambertian(), 0.0, nothing, nothing)#We don't want to see BVs
-    return BoundVol(objects, Sphere(center, radius, mat))
-end
+# ##Abstract wrapper, need implementations for:
+# ##Sphere, Triangle, BoundVol
+# """ Put the objects in a BoundVol, abstract mode """
+# function bound_object(object) end
 
-#Next we do the sphere
-""" Bounds a sphere with a BoundVol"""
-function bound_object(object::Sphere)
-    # print("Trix\n") #Debugging flag
-    mat = Material(Lambertian(), 0.0, nothing, nothing)
-    return BoundVol(object, Sphere(object.center, object.radius+0.1, mat))
-end
+# #BoundVol first since it's simplest
+# """ Bounds an array of BoundVols with another BoundVol"""
+# function bound_object(objects::Array{BoundVol,1})
+#     # print("Apple jacks\n")
+#     minX = 0.0
+#     maxX = 0.0
+#     minY = 0.0
+#     maxY = 0.0
+#     minZ = 0.0
+#     maxZ = 0.0
+#     #Find out how big of a BoundVol we need
+#     for vol in objects
+#         cen = vol.bound.center
+#         rad = vol.bound.radius
+#         if cen[1]+rad > maxX
+#             maxX = cen[1]+rad
+#         end
+#         if cen[1]-rad < minX
+#             minX = cen[1]-rad
+#         end
+#         if cen[2]+rad > maxY
+#             maxY = cen[2]+rad
+#         end
+#         if cen[2]-rad < minY
+#             minY = cen[2]-rad
+#         end
+#         if cen[3]+rad > maxZ
+#             maxZ = cen[3]+rad
+#         end
+#         if cen[3]-rad < minZ
+#             minZ = cen[3]-rad
+#         end
+#     end
+#     #Use the data to make a new BoundVol
+#     cX = (maxX - minX)/2 + minX
+#     cY = (maxY - minY)/2 + minY
+#     cZ = (maxZ - minZ)/2 + minZ
+#     center = Vec3(cX,cY,cZ)
+#     radius = max(maxX-cX, maxY-cY, maxZ-cZ)
+#     mat = Material(Lambertian(), 0.0, nothing, purple)#nothing)#We don't want to see BVs
+#     return BoundVol(objects, Sphere(center, radius, mat))
+# end
 
-#Now we try to bound an OBJMesh
-""" Bounds an OBJMesh with a sphere
-    with a BoundVol """
-function bound_object(object::Triangle)
-    # print("Cap'n crunch\n") #Debugging flag
-    verts = object.mesh.positions
-    minV, maxV = max_bounds(verts)
-    center = maxV-minV
-    radius = vec3_mag(maxV, center)
-    mat = Material(Lambertian(), 0.0, nothing, nothing)#We don't want to see BVs
-    return BoundVol(object, Sphere(center, radius, mat))
-end
+# #Next we do the sphere
+# """ Bounds a sphere with a BoundVol"""
+# function bound_object(object::Sphere)
+#     # print("Trix\n") #Debugging flag
+#     mat = Material(Lambertian(), 0.0, nothing, purple)#nothing)
+#     return BoundVol(object, Sphere(object.center, object.radius+0.1, mat))
+# end
 
-#Construct a BVH from a Scene object
-""" Takes a Scene object as input and returns a BoundVol
-    containing all of the objects in the scene (also bounds
-    the objects in their own BoundVols,too)."""
-function build_hierarchy(scene::Scene)
-    # print("Fruity pebbles\n") #Debugging flag
-    objs = scene.objects
-    holder = BoundVol[]#Array{BoundVol,1}(undef, 1)
-    for i in objs
-        # print(typeof(i), ' ') #Debugging flag
-        push!(holder, bound_object(i))
-    end
-    return [bound_object(holder)]
-end
+# #Now we try to bound an OBJMesh
+# """ Bounds an OBJMesh with a sphere
+#     with a BoundVol """
+# function bound_object(object::Triangle)
+#     # print("Cap'n crunch\n") #Debugging flag
+#     verts = object.mesh.positions
+#     minV, maxV = max_bounds(verts)
+#     center = maxV-minV
+#     radius = vec3_mag(maxV, center)
+#     mat = Material(Lambertian(), 0.0, nothing, purple)# nothing)#We don't want to see BVs
+#     return BoundVol(object, Sphere(center, radius, mat))
+# end
+
+# #Construct a BVH from a Scene object
+# """ Takes a Scene object as input and returns a BoundVol
+#     containing all of the objects in the scene (also bounds
+#     the objects in their own BoundVols,too)."""
+# function build_hierarchy(scene::Scene)
+#     # print("Fruity pebbles\n") #Debugging flag
+#     objs = scene.objects
+#     holder = BoundVol[]#Array{BoundVol,1}(undef, 1)
+#     for i in objs
+#         # print(typeof(i), ' ') #Debugging flag
+#         push!(holder, bound_object(i))
+#     end
+#     return [bound_object(holder)]
+# end
 
 #Helper methods
 """ Takes an array of Vec3s and gives you back
@@ -147,17 +151,17 @@ function vec3_mag(vec1::Vec3, vec2::Vec3)
     return (dot(vec2-vec1,vec2-vec1))^0.5
 end
 
-""" hit_rect does the hard part of checking through the BVH
-    looking for objects that actually get hit.
-    """
-function hit_rect(ray::Ray, bvh::BoundVol, tmin, tmax)
-    #Recursive exit condition
-    if bvh.objects == Sphere || bvh.objects == Triangle
-        return closest_intersect([bvh.objects], ray, tmin, tmax)
-    end
-    #Try other things
-    hit_rect(ray, bvh.objects, tmin, tmax)
+# """ hit_rect does the hard part of checking through the BVH
+#     looking for objects that actually get hit.
+#     """
+# function hit_rect(ray::Ray, bvh::BoundVol, tmin, tmax)
+#     #Recursive exit condition
+#     if bvh.objects != Array{BoundVol,1}
+#         return closest_intersect(bvh.objects, ray, tmin, tmax)
+#     end
+#     #Try other things
+#     hit_rect(ray, bvh.objects, tmin, tmax)
     
-end
+# end
 
 end # module Bound

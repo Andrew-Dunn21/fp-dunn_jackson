@@ -7,7 +7,7 @@ using ..GfxBase
 
 export Material, Texture
 export ShadingModel, Flat, Normal
-export PhysicalShadingModel, Lambertian, BlinnPhong
+export PhysicalShadingModel, Lambertian, BlinnPhong, BVMode
 
 export get_diffuse
 
@@ -20,6 +20,7 @@ export get_diffuse
 #   - PhysicalShadingModel
 #       - Lambertian - diffuse shading
 #       - BlinnPhong - diffuse+specular shading
+#       - BVMode     - used for catchin BVH ray intersection
 
 abstract type ShadingModel end
 struct Flat<:ShadingModel end
@@ -33,6 +34,8 @@ mutable struct BlinnPhong <: PhysicalShadingModel
     specular_color::RGB{Float32} # color of the highlight
     specular_exp::Float64 # "sharpness" exponent
 end
+
+struct BVMode <: PhysicalShadingModel end
 
 ## Texture struct definition ##
 mutable struct Texture

@@ -18,10 +18,11 @@ include("GfxBase.jl")
 include("Lights.jl")
 include("Materials.jl")
 include("WWUMeshes.jl")
+include("Bound.jl")
 include("Scenes.jl")
 include("Cameras.jl")
 include("TestScenes.jl")
-include("Bound.jl")
+
 
 using .GfxBase
 using .Lights
@@ -134,10 +135,11 @@ end
 function boundray(scene::Scene, ray::Ray, tmin, tmax, rec_depth=1)
     #This keeps things working while debugging the
     #broken bits
-    return scene.background #Comment out to try the method
+    # return scene.background #Comment out to try the method
 
     ##Actual code, which is currently broken
-    out = hit_rect(ray, scene.objects, tmin, tmax)#Lets maybe redo this one
+    # out = hit_rect(ray, scene.objects, tmin, tmax)#Lets maybe redo this one
+    return traceray(scene, ray, tmin, tmax, rec_depth)
 end
 
 """ """
