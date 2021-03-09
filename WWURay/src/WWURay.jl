@@ -6,7 +6,7 @@ functionality.
 
 module WWURay
 
-export main, closest_intersect
+export main, closest_intersect, decimateMesh
 
 using FileIO
 using Images
@@ -22,12 +22,13 @@ include("Bound.jl")
 include("Scenes.jl")
 include("Cameras.jl")
 include("TestScenes.jl")
-
+include("decimate.jl")
 
 using .GfxBase
 using .Lights
 using .Materials
 using .Bound
+using .Decimate
 
 import .Scenes
 import .Scenes.Scene
@@ -99,19 +100,19 @@ function traceray(scene::Scene, ray::Ray, tmin, tmax, rec_depth=1)
     if closest_hitrec == nothing
             return scene.background
     end
-    
+
     object = closest_hitrec.object
     point = closest_hitrec.intersection
     normal = closest_hitrec.normal
     material = object.material
     shader = material.shading_model
-    
+
     if shader == nothing || object.material==nothing||scene==nothing||closest_hitrec==nothing
         throw(DivideError())
     end
-    
+
     local_color = determine_color(shader, object.material, ray, closest_hitrec, scene)
-    
+
     ##############################
     # TODO 6 - mirror reflection #
     ##############################
@@ -356,6 +357,12 @@ function main(scene, camera, height, width, outfile, bound::Bool=false)
     save(File(format"PNG", outfile), colorview(RGB, canvas))
     end
 
+end
+
+function decimateMesh(meshPath="bunny", iterations=1)
+    @time begin
+        decimate(meshPath, iterations)
+    end
 end
 
 end # module WWURay

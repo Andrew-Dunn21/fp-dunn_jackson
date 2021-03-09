@@ -10,15 +10,22 @@ mutable struct decimationInfo
     edgeDist::Array{Array{Float64, 1}, 1} # a list of edges sorted by their euclidean distance
 end
 
-function decimate(meshPath="bunny.obj")
+function decimate(meshPath::String, iterations::Int64)
     println("Loading Mesh")
-    mesh = read_obj("data/" * meshPath)
-    println("Finding Edges")
-    decimator = findEdges(mesh)
-    println(size(decimator.edges)[1], " Unique Edges")
-    buildViable(mesh, decimator)
-    collapseMesh(mesh, decimator)
-    write_obj("results/" * meshPath, mesh)
+    mesh = read_obj("data/" * meshPath * ".obj")
+    if mesh == nothing
+        println("Failed to load mesh")
+        return
+    end
+    for i in 1:iterations
+        println("Starting Iteration " * string(i))
+        println("Finding Edges")
+        decimator = findEdges(mesh)
+        println(size(decimator.edges)[1], " Unique Edges")
+        buildViable(mesh, decimator)
+        collapseMesh(mesh, decimator)
+        write_obj("results/" * meshPath * "_LOD_" * string(i) * ".obj", mesh)
+    end
 
     return 1
     #return mesh
