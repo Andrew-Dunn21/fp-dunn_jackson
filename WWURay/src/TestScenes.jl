@@ -42,15 +42,23 @@ function camera_3(img_height, img_width)
 end
 
 function camera_4(img_height, img_width)
-    eye = Vec3(-18, 5, 60)#Vec3(20, 8, 10)
+    eye = Vec3(-18, 5, 600)#Vec3(20, 8, 10)
     view = Vec3(0, 0, 0) - eye
     up = Vec3(0, 1, 0)
     focal = 5.0
     Cameras.PerspectiveCamera(eye, view, up, focal, img_height, img_width)
 end
 
+function camera_5(img_height, img_width) #This one's for the accelTest
+    eye = Vec3(0,0,0) #Eye at the origin
+    view = Vec3(0,0,-1) #Looking down the negative z-axis
+    up = Vec3(0,1,0)
+    focal = 5.0
+    Cameras.PerspectiveCamera(eye, view, up, focal, img_height, img_width)
+end
 
-cameras = [camera_1, camera_2, camera_3, camera_4]
+
+cameras = [camera_1, camera_2, camera_3, camera_4, camera_5]
 
 function get_camera(i, img_height, img_width)
     cameras[i](img_height, img_width)
@@ -274,7 +282,7 @@ function artifact_dunna21()
     bl= Material(Lambertian(), 0, Texture("data/pyr.png", false), RGB{Float32}(0.55, .35, .35))#Material(BlinnPhong(black, 1), 0.0, nothing, black)
     p = Material(BlinnPhong(white, 10), 0.0, nothing, RGB{Float32}(.8,0,1))
     objs = []
-    push!(objs, Sphere(Vec3(0, -5001, 0), 5000, Material(Lambertian(), 0.2, nothing, RGB{Float32}(0.8, 0.8, 0.5))))
+    # push!(objs, Sphere(Vec3(0, -5001, 0), 5000, Material(Lambertian(), 0.2, nothing, RGB{Float32}(0.8, 0.8, 0.5))))
     push!(objs, Sphere(Vec3(-1.2,  1, -3), 1, r))
     push!(objs, Sphere(Vec3(1.2,  1, -3), 1, p))
     push!(objs, Sphere(Vec3(0,  3, -3), 1, g))
@@ -302,8 +310,40 @@ function artifact_dunna21()
     Scene(bg,objs,lights)
 end
 
+function accelTest()
+    #This scene plays best with camera 5, others aren't as nice
+    #Build the color palette
+    bg = RGB{Float32}(0.05,0.1,0.1) #The dark of space
+    mars = Material(Lambertian(), 0, Texture("data/mars.png", false), RGB{Float32}(0.75, .35, .35))
+    stn = Material(BlinnPhong(white, 10), 0.0, nothing, RGB{Float32}(0.3, 0.3, 0.3))
+    ftr = Material(BlinnPhong(white, 10), 0.1, nothing, RGB{Float32}(0.4, 0.4, 0.45))
+    
+    #Add the objects
+    objs = []
+    push!(objs, Sphere(Vec3(0.0, 0.0, -3000), 50, mars)) #Big planet
+    ## Apparently ~55k triangles per TIE is too high for this ray tracer
+    # station = read_obj("data/space-station-2.obj") #Space station
+    # append!(objs, mesh_helper(station, stn, 5.0, Vec3(485, 0,-2450)))
+    # tie1 = read_obj("data/tie-fighter.obj") #Fighter 1 
+    # tie2 = read_obj("data/tie-fighter.obj") #Fighter 2
+    # tie3 = read_obj("data/tie-fighter.obj") #Fighter 3
+    tie1 = read_obj("data/airship_decimated.obj")
+    # tie2 = read_obj("data/airship_decimated.obj")
+    # tie3 = read_obj("data/airship_decimated.obj")
+    append!(objs, mesh_helper(tie1, ftr, 10.0, Vec3(25, 10, -2200)))
+    # append!(objs, mesh_helper(tie2, ftr, 1.0, Vec3(440, 10, -2200)))
+    # append!(objs, mesh_helper(tie3, ftr, 1.0, Vec3(450, 10, -2180)))
 
 
-scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7, scene_8, scene_9, artifact_dunna21]
+    #Turn on the lights
+    lights = []
+    push!(lights, PointLight(0.9, Vec3(-1000, 0, 0)))
+    push!(lights, DirectionalLight(0.3, Vec3(0,-1,0)))
+
+    #And we're done
+    Scene(bg, objs, lights)
+end
+
+scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7, scene_8, scene_9, artifact_dunna21, accelTest]
 
 end # module TestScenes
