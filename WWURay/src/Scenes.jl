@@ -214,10 +214,24 @@ function ray_intersect(ray::Ray, object::BoundVol)
     res = hit_box(ray, object)
     if res != nothing
         # print("~") #This should be happening
-        res = ray_intersect(ray, object.objects[1])#Only set up for 1 item boxes
+        res = ray_intersect(ray, object.objects)#Going big now
     end
     return res
 end
+
+function ray_intersect(ray::Ray, object::Array{Any, 1})
+    minT = Inf
+    out = nothing
+    for obj in object
+        check = ray_intersect(ray, obj)
+        if check isa HitRecord && check.t < minT
+            minT = check.t
+            out = check
+        end
+    end
+    return out
+end
+            
 
 """ Basic version, just puts all objects into a box."""
 function build_hierarchy(scene::Scene)
@@ -261,6 +275,7 @@ function bound_object(object::Triangle, kids=nothing, parent=nothing)
     if !object.mesh.meshed
         mins, maxs = max_bounds(object.mesh.positions)
         bound = bound_builder(mins, maxs)
+        object.mesh.meshed = true
         return BoundVol([object], bound, kids, parent)
     end
     return nothing
