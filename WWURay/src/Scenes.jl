@@ -39,16 +39,6 @@ Returns a HitRecord with info about the intersetion, or nothing if
 the ray doesn't intersect with the object. """
 function ray_intersect(ray::Ray, object) end
 
-function ray_intersect(ray::Ray, object::BoundVol)
-    #This just reroutes to hit_box
-    res = hit_box(ray, object)
-    if res != nothing
-        print("~") #This should be happening
-        res = ray_intersect(ray, object.objects[1])#Only set up for 1 item boxes
-    end
-    return res
-end
-
 ##################
 ##### Sphere #####
 ##################
@@ -217,18 +207,36 @@ end
 ################################
 ###### BoundVol Build Kit ######
 ################################
+
+""" Hopefully this does box intersection right."""
+function ray_intersect(ray::Ray, object::BoundVol)
+    #This just reroutes to hit_box
+    res = hit_box(ray, object)
+    if res != nothing
+        # print("~") #This should be happening
+        res = ray_intersect(ray, object.objects[1])#Only set up for 1 item boxes
+    end
+    return res
+end
+
 """ Basic version, just puts all objects into a box."""
 function build_hierarchy(scene::Scene)
     bObjs = []
-    verts = Array{Vec3}([])
+    verts = []
     for obj in scene.objects
         #Bound each object
-        push!(bObjs, bound_object(obj))
-        if obj == Sphere
-            push!(verts, obj.center+radius)
-            push!(verts, obj.center-radius)
-        elseif obj == Triangle
+        check = bound_object(obj)
+        if check != nothing
+            push!(bObjs, check)
+        end
+        if obj isa Sphere
+            push!(verts, obj.center+obj.radius)
+            push!(verts, obj.center-obj.radius)
+        elseif obj isa Triangle
             push!(verts, obj.mesh.positions)
+        else
+            print(typeof(obj))
+            throw(DivideError())
         end
     end
     #Later: Find the bounded objects that are closest together
@@ -249,16 +257,25 @@ function bound_object(object::Sphere, parent=nothing, kids=nothing)
 end
 
 function bound_object(object::Triangle, kids=nothing, parent=nothing)
-    mins, maxs = max_bounds(object.mesh.positions)
-    bound = bound_builder(mins, maxs)
-    return BoundVol([object], bound, kids, parent)
+    #Trying to ensure we bound once per mesh
+    if !object.mesh.meshed
+        mins, maxs = max_bounds(object.mesh.positions)
+        bound = bound_builder(mins, maxs)
+        return BoundVol([object], bound, kids, parent)
+    end
+    return nothing
+    
 end
 
+""" Only set up to read arrays of BoundVols, but using typed arrays
+    was causing issues. """
 function bound_object(object::Array{Any,1}, kids=nothing, parent=nothing)
     verts = Array{Vec3,1}
     for i in object
-        for j in object.bound
-            push!(verts, j)
+        if typeof(object)==BoundVol
+            for j in object.bound
+                push!(verts, j)
+            end
         end
     end
     mins, maxs = max_bounds(verts)
@@ -269,73 +286,173 @@ end
 ##Helper functions
 # """ Takes the output of Bound.max_bound and makes the points
 #     for a BoundVol to hold"""
-function bound_builder(min::Vec3, max::Vec3)
-    bound = [Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),
-                    Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0)]
-    bound[1] = min                          #MinX, MinY, MinZ
-    bound[2] = Vec3(min[1], min[2], max[3]) #MinX, MinY, MaxZ
-    bound[3] = Vec3(max[1], min[2], min[3]) #MaxX, MinY, MinZ
-    bound[4] = Vec3(max[1], min[2], max[3]) #MaxX, MinY, MaxZ
-    bound[5] = Vec3(min[1], max[2], min[3]) #MinX, MaxY, MinZ
-    bound[6] = Vec3(min[1], max[2], max[3]) #MinX, MaxY, MaxZ
-    bound[7] = Vec3(max[1], max[2], min[3]) #MaxX, MaxY, MinZ
-    bound[8] = max                          #MaxX, MaxY, MaxZ
+function bound_builder(mn::Vec3, mx::Vec3)
+    bound = []
+    push!(bound, mn)
+    push!(bound, (Vec3(mn[1], mn[2], mx[3])))
+    push!(bound, Vec3(mx[1], mn[2], mn[3]))
+    push!(bound, Vec3(mx[1], mn[2], mx[3]))
+    push!(bound, Vec3(mn[1], mx[2], mn[3]))
+    push!(bound, Vec3(mn[1], mx[2], mx[3]))
+    push!(bound, Vec3(mx[1], mx[2], mn[3]))
+    push!(bound, mx)
+    # bound = [Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),
+    #                 Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0),Vec3(0.0,0.0,0.0)]
+    # bound[1] = min                          #MinX, MinY, MinZ
+    # bound[2] = Vec3(min[1], min[2], max[3]) #MinX, MinY, MaxZ
+    # bound[3] = Vec3(max[1], min[2], min[3]) #MaxX, MinY, MinZ
+    # bound[4] = Vec3(max[1], min[2], max[3]) #MaxX, MinY, MaxZ
+    # bound[5] = Vec3(min[1], max[2], min[3]) #MinX, MaxY, MinZ
+    # bound[6] = Vec3(min[1], max[2], max[3]) #MinX, MaxY, MaxZ
+    # bound[7] = Vec3(max[1], max[2], min[3]) #MaxX, MaxY, MinZ
+    # bound[8] = max                          #MaxX, MaxY, MaxZ
     return bound
 end
 
-# """ Takes a ray and a BoundVol object and pretends it has
-#     a physical structure to compute the triangle intersections
-#     of ray with the pretend triangles of the bounding box.
-#     """
-
+""" Takes a ray and a BoundVol object and pretends it has
+    a physical structure to compute the triangle intersections
+    of ray with the pretend triangles of the bounding box.
+    """
 function hit_box(ray::Ray, bound::BoundVol)
-    #First we make the 12 triangles of goodness
-    #composed of Vec3 of point indices in bound.bound
-    t01 = Vec3(1,3,2)
-    t02 = Vec3(2,3,4)
-    t03 = Vec3(2,6,8)
-    t04 = Vec3(2,4,8)
-    t05 = Vec3(4,7,8)
-    t06 = Vec3(4,3,7)
-    t07 = Vec3(3,7,5)
-    t08 = Vec3(3,1,5)
-    t09 = Vec3(1,6,5)
-    t10 = Vec3(1,2,6)
-    t11 = Vec3(6,7,5)
-    t12 = Vec3(6,8,7)
-    tList = [t01, t02, t03, t04, t05, t06, t07, t08, t09, t10, t11, t12]
-    minT = Inf
+    ##This edition attempts ray/plane intersection
+    ##using the vertices of the box to define the planes
+    pl1 = point_to_plane(bound.bound[2], bound.bound[1], bound.bound[4]) #Bottom
+    pl2 = point_to_plane(bound.bound[2], bound.bound[4], bound.bound[6]) #Front
+    pl3 = point_to_plane(bound.bound[1], bound.bound[2], bound.bound[5]) #Left
+    pl4 = point_to_plane(bound.bound[3], bound.bound[4], bound.bound[7]) #Right
+    pl5 = point_to_plane(bound.bound[1], bound.bound[5], bound.bound[3]) #Back
+    pl6 = point_to_plane(bound.bound[6], bound.bound[5 ], bound.bound[8]) #Top
+    planes = [pl1, pl2, pl3, pl4, pl5, pl6]
+    #Loop and intersect:
+    mint = Inf
     intersect = nothing
-
-    #Loop the triangles and see if any are winners
-    for i in 1:12
-        tri = tList[i]
-        a = bound.bound[Int(tri[1])]
-        b = bound.bound[Int(tri[2])]
-        c = bound.bound[Int(tri[3])]
-        b2a = b - a
-        c2a = c - a
-        d = ray.direction
-        p2a = a - ray.origin
-        
-        A = hcat(b2a, c2a, d)
-        byt = A \ p2a
-        beta = byt[1]
-        gamma = byt[2]
-        alfa = 1 - beta - gamma
-        t = byt[3]
+    norm = nothing
+    hitPl = nothing
+    for pl in planes
+        #Next step
+        denom = dot(ray.direction, pl[2])
+        # print(pl[2])
+        if denom !=0
+            t = dot((pl[1]-ray.origin), pl[2])/denom
+        else
+            t = Inf
+        end
+        if t < mint
+            sect = ray.origin + t*ray.direction
+            if evalBound(sect, pl[3], pl[4])
+                intersect = sect
+                mint = t
+                hitPl = pl
+            end
+        end
+    end
     
-        if t < minT && alfa >= 0 && alfa <= 1 && beta >= 0 && beta <= 1 && gamma >= 0 && gamma <= 1 
-            minT = t
-            intersect = ray.origin + t*ray.direction
+    if intersect == nothing
+        return nothing
+    else
+        #Figure the normal
+        norm = hitPl[2]
+        return HitRecord(mint, intersect, norm, nothing, bound)
+    end
+end
+#Some helpers for hit_box:
+""" Takes a sect, low, hi (all Vec3's) and sees if sect is in between
+    low and hi. Returns a bool."""
+    function evalBound(sect::Vec3, low::Vec3, hi::Vec3)
+        #unpack for convenient notation
+        x, y, z = sect
+        x0,y0,z0 = low
+        x1,y1,z1 = hi
+        if x >= x0 && x <= x1
+            xp = true
+        else
+            xp = false
+        end
+        if y >= y0 && y <= y1
+            yp = true
+        else
+            yp = false
+        end
+        if z >= z0 && z <= z1
+            zp = true
+        else
+            zp = false
+        end
+        if xp && yp && zp
+            return true
+        else
+            return false
         end
     end
 
-    if intersect == nothing
-        return nothing
+""" Takes three points, does some math, then returns a tuple
+    with the plane coefs as a tuple s.t. (Vec3, Vec3, Vec3, Vec3) """
+function point_to_plane(p1::Vec3, p2::Vec3, p3::Vec3)
+    v12 = p2-p1
+    v13 = p3-p1
+    norm = cross(v12, v13)
+    #Debugging stuff
+    if norm == Vec3(0,0,0)
+        print(norm, "\n")
+        print(v12, "\n")
+        print(v13)
+        throw(DivideError()) 
+    elseif isnan(norm[1])
+        print(v12)
+        print(v13)
+        throw(DivideError())
     end
+    vMin = Vec3(min(p1[1],p2[1],p3[1]),min(p1[2],p2[2],p3[2]),min(p1[3],p2[3],p3[3]))
+    vMax = Vec3(max(p1[1],p2[1],p3[1]),max(p1[2],p2[2],p3[2]),max(p1[3],p2[3],p3[3]))
+    return (p1, norm, vMin, vMax) #Give back a point and a normal
+end
 
-    return HitRecord(minT, intersect, Vec3(0,0,0), nothing, bound)
-end #hit_box
+##Trying a smorter way
+# function hit_box(ray::Ray, bound::BoundVol)
+#     #First we make the 12 triangles of goodness
+#     #composed of Vec3 of point indices in bound.bound
+#     t01 = Vec3(1,3,2)
+#     t02 = Vec3(2,3,4)
+#     t03 = Vec3(2,6,8)
+#     t04 = Vec3(2,4,8)
+#     t05 = Vec3(4,7,8)
+#     t06 = Vec3(4,3,7)
+#     t07 = Vec3(3,7,5)
+#     t08 = Vec3(3,1,5)
+#     t09 = Vec3(1,6,5)
+#     t10 = Vec3(1,2,6)
+#     t11 = Vec3(6,7,5)
+#     t12 = Vec3(6,8,7)
+#     tList = [t01, t02, t03, t04, t05, t06, t07, t08, t09, t10, t11, t12]
+#     minT = Inf
+#     intersect = nothing
+#     #Loop the triangles and see if any are winners
+#     for i in 1:12
+#         tri = tList[i]
+#         a = bound.bound[Int(tri[1])]
+#         b = bound.bound[Int(tri[2])]
+#         c = bound.bound[Int(tri[3])]
+#         b2a = b - a
+#         c2a = c - a
+#         d = ray.direction
+#         p2a = a - ray.origin
+#         A = hcat(b2a, c2a, d)
+#         byt = A \ p2a
+#         beta = byt[1]
+#         gamma = byt[2]
+#         alfa = 1 - beta - gamma
+#         t = byt[3]
+#         if t < minT && alfa >= 0 && alfa <= 1 && beta >= 0 && beta <= 1 && gamma >= 0 && gamma <= 1 
+#             minT = t
+#             intersect = ray.origin + t*ray.direction
+#         end
+#     end
+#     if intersect == nothing
+#         return nothing
+#     end
+#     return HitRecord(minT, intersect, Vec3(0,0,0), nothing, bound)
+# end #hit_box
+
+testBox = Material(Lambertian(), 0, nothing, RGB{Float32}(.8, .8, .6))
 
 end # module Scenes
