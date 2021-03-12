@@ -47,17 +47,20 @@ function max_bounds(verts)
         end
         if v[1] < minV[1] #Once for x's
             minV[1] = v[1]
-        elseif v[1] > maxV[1]
+        end
+        if v[1] > maxV[1]
             maxV[1] = v[1]
         end
         if v[2] < minV[2] #Twice for y's
             minV[2] = v[2]
-        elseif v[2] > maxV[2]
+        end
+        if v[2] > maxV[2]
             maxV[2] = v[2]
         end
         if v[3] < minV[3] #Thrice for z's
             minV[3] = v[3]
-        elseif v[3] > maxV[3]
+        end
+        if v[3] > maxV[3]
             maxV[3] = v[3]
         end
     end

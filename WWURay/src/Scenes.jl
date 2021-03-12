@@ -208,12 +208,14 @@ end
 ###### BoundVol Build Kit ######
 ################################
 
+#Testing bits
+testBox = Material(Lambertian(), 0, nothing, RGB{Float32}(.8, .8, .6))
+
 """ Hopefully this does box intersection right."""
 function ray_intersect(ray::Ray, object::BoundVol)
     #This just reroutes to hit_box
     res = hit_box(ray, object)
     if res != nothing
-        # print("~") #This should be happening
         res = ray_intersect(ray, object.objects)#Going big now
     end
     return res
@@ -265,7 +267,12 @@ function bound_object(object, kids=nothing, parent=nothing) end
 
 function bound_object(object::Sphere, parent=nothing, kids=nothing)
     #Get the bounds
-    mins,maxs = max_bounds([object.center-object.radius, object.center+object.radius])
+    mins,maxs = max_bounds([Vec3(object.center[1]-object.radius, object.center[2], object.center[3]), 
+                            Vec3(object.center[1]+object.radius, object.center[2], object.center[3]),
+                            Vec3(object.center[1], object.center[2]-object.radius, object.center[3]), 
+                            Vec3(object.center[1], object.center[2]+object.radius, object.center[3]),
+                            Vec3(object.center[1], object.center[2], object.center[3]-object.radius),
+                            Vec3(object.center[1], object.center[2], object.center[3]+object.radius)])
     bound = bound_builder(mins, maxs)
     return BoundVol([object], bound, kids, parent)
 end
@@ -275,7 +282,8 @@ function bound_object(object::Triangle, kids=nothing, parent=nothing)
     if !object.mesh.meshed
         mins, maxs = max_bounds(object.mesh.positions)
         bound = bound_builder(mins, maxs)
-        object.mesh.meshed = true
+        object.mesh.meshed = true #For some reason this line turns off
+                                  #rendering triangles?
         return BoundVol([object], bound, kids, parent)
     end
     return nothing
@@ -467,7 +475,5 @@ end
 #     end
 #     return HitRecord(minT, intersect, Vec3(0,0,0), nothing, bound)
 # end #hit_box
-
-testBox = Material(Lambertian(), 0, nothing, RGB{Float32}(.8, .8, .6))
 
 end # module Scenes

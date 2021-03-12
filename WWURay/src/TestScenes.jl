@@ -57,8 +57,16 @@ function camera_5(img_height, img_width) #This one's for the accelTest
     Cameras.PerspectiveCamera(eye, view, up, focal, img_height, img_width)
 end
 
+function camera_6(img_height, img_width)
+    eye = Vec3(20, 0, 0)
+    view = Vec3(0, 0, -1)
+    up = Vec3(0,1,0)
+    focal = 5.0
+    Cameras.PerspectiveCamera(eye, view, up, focal, img_height, img_width)
+end
 
-cameras = [camera_1, camera_2, camera_3, camera_4, camera_5]
+
+cameras = [camera_1, camera_2, camera_3, camera_4, camera_5, camera_6]
 
 function get_camera(i, img_height, img_width)
     cameras[i](img_height, img_width)
@@ -328,11 +336,11 @@ function accelTest()
     # tie2 = read_obj("data/tie-fighter.obj") #Fighter 2
     # tie3 = read_obj("data/tie-fighter.obj") #Fighter 3
     tie1 = read_obj("data/airship_decimated.obj")
-    # tie2 = read_obj("data/airship_decimated.obj")
-    # tie3 = read_obj("data/airship_decimated.obj")
+    tie2 = read_obj("data/airship_decimated.obj")
+    tie3 = read_obj("data/airship_decimated.obj")
     append!(objs, mesh_helper(tie1, ftr, 10.0, Vec3(25, 10, -2200)))
-    # append!(objs, mesh_helper(tie2, ftr, 1.0, Vec3(440, 10, -2200)))
-    # append!(objs, mesh_helper(tie3, ftr, 1.0, Vec3(450, 10, -2180)))
+    append!(objs, mesh_helper(tie2, ftr, 1.0, Vec3(440, 10, -2200)))
+    append!(objs, mesh_helper(tie3, ftr, 1.0, Vec3(450, 10, -2180)))
 
 
     #Turn on the lights
