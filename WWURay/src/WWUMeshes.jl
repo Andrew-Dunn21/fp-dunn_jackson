@@ -31,6 +31,7 @@ mutable struct OBJMesh
     normals::Array{Vec3, 1} # all vertex normals
     triangles::Array{OBJTriangle, 1} # the OBJTriangles belonging to the mesh
     meshed::Bool #Trying to add a boolean field for if it's been meshed
+    bound::Any #This field will get a BoundVol
 end
 #New constructor to assign meshed to false by default
 # function OBJMesh(pos, uvs, nor, tri)
@@ -40,7 +41,7 @@ end
 """ read_obj(obj_filename)
 Read a mesh in OBJ format from file obj_filename."""
 function read_obj(obj_filename)
-    m = OBJMesh([], [], [], [], false) # create a mesh
+    m = OBJMesh([], [], [], [], false, nothing) # create a mesh
     open(obj_filename) do f
         for (line_number, line) in enumerate(eachline(f))
             if line == "" || line[1] == "#"

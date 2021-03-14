@@ -323,6 +323,7 @@ function main(scene, camera, height, width, outfile, bound::Bool=false)
         #Threads.@threads for i in 1:height
         for i in 1:height
             for j in 1:width
+                pctage(height,width, i,j) #Progress tracker
                 viewing_ray = Cameras.pixel_to_ray(camera, i, j)
                 canvas[i,j]  = boundray(scene, viewing_ray, 1, Inf, 7)
             end
@@ -332,6 +333,7 @@ function main(scene, camera, height, width, outfile, bound::Bool=false)
         #Threads.@threads for i in 1:height
         for i in 1:height
             for j in 1:width
+                pctage(height, width, i, j) #Progress tracker
                 viewing_ray = Cameras.pixel_to_ray(camera, i, j)
                 canvas[i,j]  = traceray(scene, viewing_ray, 1, Inf, 7)
             end
@@ -364,5 +366,35 @@ function decimateMesh(meshPath="bunny", iterations=1)
         decimate(meshPath, iterations)
     end
 end
+
+""" Call this method to test the rendering speed with
+    and without BVH. """
+function bvhTest()
+    print("Running BVH comparison test!\n\nBenchmark:\n")
+    main(11, 5, 1000, 1000, "results/benchmark.png", false)
+    print("\nBVH Demo:\n")
+    main(11, 5, 1000, 1000, "results/bvh-trial.png", true)
+end
+
+""" Things started getting REALLY slow, so I made a progress
+    printer that is very basic."""
+function pctage(h, w, i, j)
+    click = h/10
+    if i==h & j==w
+        print("*)\nDone!\n")
+        return
+    end
+    if j==1
+        if i==1
+            print("Scale:    (1-2-3-4-5-6-7-8-9-0)\n")
+            print("Progress: (")
+        elseif i%click == 0
+            if i!=h
+                print("*~")
+            end
+        end
+    end
+end
+
 
 end # module WWURay

@@ -25,7 +25,7 @@ AABB time is now"""
 mutable struct BoundVol
     objects::Array{Any,1} #Things that are bounded, has to array
     bound::Array{Vec3,1} #Points for bounding
-    kids::Union{Array{BoundVol,1}, Nothing}#These will be used next
+    kids::Union{Array{Any,1}, Nothing}#These will be used next
     parent::Union{BoundVol, Nothing}#Same with parent pointers
 end
 

@@ -328,7 +328,7 @@ function accelTest()
     
     #Add the objects
     objs = []
-    push!(objs, Sphere(Vec3(0.0, 0.0, -3000), 50, mars)) #Big planet
+    push!(objs, Sphere(Vec3(0.0, 0.0, -3000), 150, mars)) #Big planet
     ## Apparently ~55k triangles per TIE is too high for this ray tracer
     # station = read_obj("data/space-station-2.obj") #Space station
     # append!(objs, mesh_helper(station, stn, 5.0, Vec3(485, 0,-2450)))
@@ -336,11 +336,11 @@ function accelTest()
     # tie2 = read_obj("data/tie-fighter.obj") #Fighter 2
     # tie3 = read_obj("data/tie-fighter.obj") #Fighter 3
     tie1 = read_obj("data/airship_decimated.obj")
-    tie2 = read_obj("data/airship_decimated.obj")
+    tie2 = read_obj("data/bunny.obj")
     tie3 = read_obj("data/airship_decimated.obj")
     append!(objs, mesh_helper(tie1, ftr, 10.0, Vec3(25, 10, -2200)))
-    append!(objs, mesh_helper(tie2, ftr, 1.0, Vec3(440, 10, -2200)))
-    append!(objs, mesh_helper(tie3, ftr, 1.0, Vec3(450, 10, -2180)))
+    append!(objs, mesh_helper(tie2, ftr, 10.0, Vec3(13, 5, -2190)))
+    append!(objs, mesh_helper(tie3, ftr, 5.0, Vec3(-20, 0, -2180)))
 
 
     #Turn on the lights
