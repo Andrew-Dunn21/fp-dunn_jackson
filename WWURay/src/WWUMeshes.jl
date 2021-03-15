@@ -215,7 +215,7 @@ function cube_mesh()
     push!(triangles, OBJTriangle([5,7,6], [1,3,4], [3,3,3])) # top face 2
 
     # julia automatically returns the last value in the function:
-    OBJMesh(positions, uvs, normals, triangles)
+    OBJMesh(positions, uvs, normals, triangles, false, nothing)
 
 end
 
