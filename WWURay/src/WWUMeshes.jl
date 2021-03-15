@@ -30,12 +30,18 @@ mutable struct OBJMesh
     uvs::Array{Vec2, 1} # all texture coordinates
     normals::Array{Vec3, 1} # all vertex normals
     triangles::Array{OBJTriangle, 1} # the OBJTriangles belonging to the mesh
+    meshed::Bool #Trying to add a boolean field for if it's been meshed
+    bound::Any #This field will get a BoundVol
 end
+#New constructor to assign meshed to false by default
+# function OBJMesh(pos, uvs, nor, tri)
+#     return OBJMesh(pos, uvs, nor, tri, false)
+# end
 
 """ read_obj(obj_filename)
 Read a mesh in OBJ format from file obj_filename."""
 function read_obj(obj_filename)
-    m = OBJMesh([], [], [], []) # create a mesh
+    m = OBJMesh([], [], [], [], false, nothing) # create a mesh
     open(obj_filename) do f
         for (line_number, line) in enumerate(eachline(f))
             if line == "" || line[1] == "#"
