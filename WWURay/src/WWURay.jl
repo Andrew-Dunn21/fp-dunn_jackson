@@ -368,12 +368,37 @@ function decimateMesh(meshPath="bunny", iterations=1)
 end
 
 """ Call this method to test the rendering speed with
-    and without BVH. """
-function bvhTest()
-    print("Running BVH comparison test!\n\nBenchmark:\n")
-    main(11, 5, 1000, 1000, "results/benchmark.png", false)
+    and without BVH on a variety of scenes. """
+function bvhTest(flag::Bool=false)
+    #Intro and Scene 1
+    print("Running BVH comparison test!\n\n")
+    print("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n\n")
+    print("First Scene- Simple Space Scene\nBenchmark:\n")
+    if flag
+        main(11, 5, 1000, 1000, "results/test-bench1.png", false)
+    else
+        print("\nSkipping the slow stage...\n(call WWURay.bvhTest(true) from the REPL to disengage)\n")
+    end
     print("\nBVH Demo:\n")
-    main(11, 5, 1000, 1000, "results/bvh-trial.png", true)
+    main(11, 5, 1000, 1000, "results/test-trial1.png", true)
+    #Scene 2
+    print("\n\n~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n\n")
+    print("\nSecond Scene- Complex Space Scene\nBenchmark:\n")
+    if flag
+        main(12, 7, 1000, 1000, "results/test-bench2.png", false)
+    else
+        print("\nSkipping the slow stage...\n")
+    end
+    print("\nBVH Demo:\n")
+    main(12, 7, 1000, 1000, "results/test-trial2.png", true)
+    #Scene 3
+    print("\n\n~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n")
+    print("\nThird Scene- No OBJMeshes (Benchmark should win)")
+    main(13, 5, 1000, 1000, "results/test-bench3.png", false)
+    print("\nBVH Demo:\n")
+    main(13, 5, 1000, 1000, "results/test-trial3.png", true)
+    print("\n\n\n\n\nTest Concluded!")
+
 end
 
 """ Things started getting REALLY slow, so I made a progress
