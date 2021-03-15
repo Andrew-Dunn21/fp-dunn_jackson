@@ -373,7 +373,7 @@ function spaceBattle()
     #Now lets set up some ships
     objs = []
     push!(objs, Sphere(Vec3(-1500,0,-9000), 500, jptr)) #Jupiter
-    push!(objs, Sphere(Vec3(5000, 3000, -17000), 150, nptn)) #Neptune
+    push!(objs, Sphere(Vec3(5000, 3000, -17000), 200, nptn)) #Neptune
     push!(objs, Sphere(Vec3(500, -100, -900), 100, mars)) #Mars
     #Big ship 1
     shp1 = read_obj("data/bvh-kit/Spaceship3.obj")
