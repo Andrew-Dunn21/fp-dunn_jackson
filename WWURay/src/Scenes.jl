@@ -292,8 +292,8 @@ function build_hierarchy(scene::Scene)
     bound = bound_builder(mins, maxs)
     #Fin
     print("Hierarchy assembled\nSize: ")
+    print(size(bObjs)[1], " objects\n")
     #More testing code
-    # print(size(bObjs), " objects\n")
     # for i in bObjs
     #     print(typeof(i.objects[1]), "\t")
     # end
