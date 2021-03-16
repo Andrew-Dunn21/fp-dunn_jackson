@@ -371,8 +371,8 @@ end
     and without BVH on a variety of scenes. """
 function bvhTest(flag::Bool=false)
     #Intro and Scene 1
-    print("Running BVH comparison test!\n\n")
-    print("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n\n")
+    print("Running BVH comparison test!\n")
+    print("~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n")
     print("First Scene- Simple Space Scene\nBenchmark:\n")
     if flag
         main(11, 5, 1000, 1000, "results/test-bench1.png", false)
@@ -382,8 +382,8 @@ function bvhTest(flag::Bool=false)
     print("\nBVH Demo:\n")
     main(11, 5, 1000, 1000, "results/test-trial1.png", true)
     #Scene 2
-    print("\n\n~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n\n")
-    print("\nSecond Scene- Complex Space Scene\nBenchmark:\n")
+    print("\n~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n")
+    print("Second Scene- Complex Space Scene\nBenchmark:\n")
     if flag
         main(12, 7, 1000, 1000, "results/test-bench2.png", false)
     else
@@ -392,12 +392,12 @@ function bvhTest(flag::Bool=false)
     print("\nBVH Demo:\n")
     main(12, 7, 1000, 1000, "results/test-trial2.png", true)
     #Scene 3
-    print("\n\n~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n")
-    print("\nThird Scene- No OBJMeshes (Benchmark should win)")
+    print("\n~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~\n")
+    print("Third Scene- No OBJMeshes (Benchmark should win)\n")
     main(13, 5, 1000, 1000, "results/test-bench3.png", false)
     print("\nBVH Demo:\n")
     main(13, 5, 1000, 1000, "results/test-trial3.png", true)
-    print("\n\n\n\n\nTest Concluded!")
+    print("\nTest Concluded!")
 
 end
 
