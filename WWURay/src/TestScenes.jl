@@ -73,7 +73,15 @@ function camera_7(img_height, img_width) #For space
     Cameras.PerspectiveCamera(eye, view, up, focal, img_height, img_width)
 end
 
-cameras = [camera_1, camera_2, camera_3, camera_4, camera_5, camera_6, camera_7]
+function camera_8(img_height, img_width) #For space
+    eye = Vec3(60, 25, 25)
+    view = Vec3(0, 0, -15)
+    up = Vec3(0,1,0)
+    focal = 1.0
+    Cameras.PerspectiveCamera(eye, view, up, focal, img_height, img_width)
+end
+
+cameras = [camera_1, camera_2, camera_3, camera_4, camera_5, camera_6, camera_7, camera_8]
 
 function get_camera(i, img_height, img_width)
     cameras[i](img_height, img_width)
@@ -419,7 +427,44 @@ function fairFight()
 
 end
 
+function longBoi()
+    #So many textures
+    bg = RGB{Float32}(0,0,0.05) #Very dark
+    mkwy = Material(Lambertian(), 0, Texture("data/bvh-kit/milkyway.png", false), RGB{Float32}(0.75, .35, .35))
+    erth = Material(Lambertian(), 0, Texture("data/bvh-kit/realearth.png", false), RGB{Float32}(0.75, .35, .35))
+    mars = Material(Lambertian(), 0, Texture("data/bvh-kit/mars.png", false), RGB{Float32}(0.75, .35, .35))
+    jptr = Material(Lambertian(), 0, Texture("data/bvh-kit/jupiter.png", false), RGB{Float32}(0.75, .35, .35))
+    nptn = Material(BlinnPhong(white, 10), 0, Texture("data/bvh-kit/neptune.png", false), RGB{Float32}(0.75, .35, .35))
+    car1 = Material(BlinnPhong(white, 10), 0, nothing, RGB{Float32}(0.7, 0.7, 0.75))
+    fgtr = Material(BlinnPhong(white, 10), 0.1, nothing, RGB{Float32}(0.4, 0.4, 0.45))
+
+    #Now lets set up some ships
+    objs = []
+    push!(objs, Sphere(Vec3(-1500,0,-9000), 500, jptr)) #Jupiter
+    push!(objs, Sphere(Vec3(5000, 3000, -17000), 200, nptn)) #Neptune
+    push!(objs, Sphere(Vec3(500, -100, -900), 100, mars)) #Mars
+    #Big ship 1
+    shp1 = read_obj("data/bvh-kit/hipolyStarTrek.obj")
+    # shp2 = read_obj("data/bvh-kit/Spaceship3.obj")
+    # shp3 = read_obj("data/bvh-kit/frigate01.obj")
+    append!(objs, mesh_helper(shp1, car1, 10.0, Vec3(0, -10,-100,)))
+    # append!(objs, mesh_helper(shp2, fgtr, 5.0, Vec3(45, -5,-190,)))
+    
+    #Big background cube that has the galaxy on it, causes big slowdown
+    append!(objs, mesh_helper(cube_mesh(), mkwy, 10000, Vec3(0,0,-30000)))
+    
+
+    #Turn on the lights
+    lights = []
+    push!(lights, PointLight(0.9, Vec3(-100, -100, 100)))
+    push!(lights, PointLight(0.5, Vec3(500, 500, 100)))
+    # push!(lights, DirectionalLight(0.65, Vec3(0,-1,0)))
+    
+    #And we're done
+    Scene(bg, objs, lights)
+end
+
 scenes = [scene_1, scene_2, scene_3, scene_4, scene_5, scene_6, scene_7, scene_8, scene_9, artifact_dunna21, accelTest,
-            spaceBattle, fairFight]
+            spaceBattle, fairFight, longBoi]
 
 end # module TestScenes

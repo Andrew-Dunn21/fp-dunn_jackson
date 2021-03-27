@@ -69,29 +69,15 @@ end
 
 function PerspectiveCamera(eye::Vec3, view::Vec3, up::Vec3, focal::Real, canv_height::Int, canv_width::Int)
 
-    ###########
-    # TODO 8a #
-    ###########
-    # Your implementation:
-
     w = normalize(-view)
     u = normalize(cross(up, w))
     v = normalize(cross(w, u))
     
     return PerspectiveCamera(eye, u, v, w, focal, canv_height, canv_width)
 
-    #
-    ###############
-    # END TODO 8a #
-    ###############
-
 end
 
 function pixel_to_ray(camera::PerspectiveCamera, i, j) 
-    ##########
-    # TODO 8b #
-    ##########
-    # Your implementation:
 
     # generate normal rays
     vp_height = camera.canv_height / camera.canv_width
@@ -106,9 +92,6 @@ function pixel_to_ray(camera::PerspectiveCamera, i, j)
     # add eye offset
     return Ray(camera.eye, direction)
 
-    ###############
-    # END TODO 8b #
-    ###############
 end
 
 

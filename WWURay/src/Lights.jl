@@ -25,10 +25,6 @@ end
 """ Calculate the direction of a given light source from the position point """
 function light_direction(light::Light, point::Vec3) end
 
-##############################
-# TODO 4a - light directions #
-##############################
-# Implement these two functions:
 function light_direction(light::DirectionalLight, point::Vec3)
     normalize(light.direction)
 end

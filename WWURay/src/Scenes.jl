@@ -52,11 +52,6 @@ end
 
 """ Ray-sphere intersection. """
 function ray_intersect(ray::Ray, object::Sphere)
-
-    #######################
-    # TODO 1 (ray-sphere) #
-    #######################
-    # Your implementation:
     # t = (-d.p +- sqrt((d.p^2)-(d.d)(p.p-1)))/(d.d)
     #
 
@@ -100,14 +95,6 @@ function ray_intersect(ray::Ray, object::Sphere)
         return nothing
     end
 
-    #
-    ##############
-    # END TODO 1 #
-    ##############
-
-    ################################################################
-    # TODO 9c - modify above to fill in Hitrec's texture coordinates
-    ################################################################
 end
 
 
@@ -153,11 +140,6 @@ end
 
 function ray_intersect(ray::Ray, object::Triangle)
     
-    ##########
-    # TODO 7 #
-    ##########
-    # Your implementation:
-    
     btoa = get_vertex(object, 1) - get_vertex(object, 2)
     ctoa = get_vertex(object, 1) - get_vertex(object, 3)
     d = ray.direction
@@ -194,14 +176,6 @@ function ray_intersect(ray::Ray, object::Triangle)
 
     return HitRecord(t, intersection, normal, uv, object)
 
-    #
-    ##############
-    # END TODO 7 #
-    ##############
-
-    ################################################################
-    # TODO 9c - modify above to fill in Hitrec's texture coordinates
-    ################################################################
 end
 
 ################################

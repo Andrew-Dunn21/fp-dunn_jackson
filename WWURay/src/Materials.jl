@@ -60,10 +60,6 @@ end
 """ Get the diffuse color of a material; if the material is textured,
 provide the uv coordinate on the object of that material. """
 function get_diffuse(material::Material, uv::Union{Vec2,Nothing})
-    ###########
-    # TODO 9b #
-    ##########
-    # Your implementation:
 
     if material.texture != nothing && uv != nothing
         return get_texture_value(material.texture, uv)
@@ -71,18 +67,10 @@ function get_diffuse(material::Material, uv::Union{Vec2,Nothing})
         return material.diffuse_color
     end
 
-    #
-    ###############
-    # END TODO 8b #
-    ###############
 end
 
 """ Look up a texture value given the uv coordinates """
 function get_texture_value(texture::Texture, uv::Vec2)
-    ###########
-    # TODO 9a #
-    ###########
-    # Your implementation:
 
     h, w = size(texture.image_data)
 
@@ -94,10 +82,6 @@ function get_texture_value(texture::Texture, uv::Vec2)
 
     return texture.image_data[i, j]
 
-    #
-    ###############
-    # END TODO 9a #
-    ###############
 end
 
 end # module Materials
